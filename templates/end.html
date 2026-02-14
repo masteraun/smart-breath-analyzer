@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Completed - Smart Breath Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #c9ceda;
+            --accent-primary: #123580;
+            --success-green: #10B981;
+            --card-bg: rgba(255, 255, 255, 0.95);
+        }
+
+        /* Snowflake Style */
+        .snow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: #62F5FC;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-10vh);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(105vh);
+                opacity: 0;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Mali', sans-serif;
+            background: var(--bg-primary) linear-gradient(135deg, #dce1eb 0%, #c9ceda 100%);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 3.5rem 2.5rem;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            width: 100%;
+            max-width: 1000px;
+            text-align: center;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 5;
+        }
+
+        .status-icon {
+            font-size: 5rem;
+            color: var(--success-green);
+            margin-bottom: 0.5rem;
+            display: block;
+            filter: drop-shadow(0 4px 10px rgba(16, 185, 129, 0.2));
+        }
+
+        h1 {
+            color: var(--success-green);
+            font-size: 2.8rem;
+            margin-top: 0;
+            font-weight: 700;
+        }
+
+        .main-subtitle {
+            font-size: 1.3rem;
+            color: #718096;
+            font-weight: 500;
+            margin-bottom: 2rem;
+        }
+
+        .statement-section {
+            margin: 2.5rem 0;
+            padding: 2.5rem;
+            background: rgba(18, 53, 128, 0.03);
+            border-radius: 25px;
+            border-left: 8px solid var(--accent-primary);
+            text-align: left;
+        }
+
+        .statement-en {
+            color: #4a5568;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            font-style: italic;
+        }
+
+        .statement-th {
+            color: #2d3436;
+            font-size: 1.15rem;
+            line-height: 1.9;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding-top: 1.5rem;
+        }
+
+        .developer-section {
+            margin-top: 3rem;
+        }
+
+        .dev-title {
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 2rem;
+            display: block;
+            opacity: 0.9;
+        }
+
+        .dev-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            text-align: left;
+        }
+
+        .dev-card {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 1.8rem;
+            border-radius: 20px;
+            border: 1px solid rgba(18, 53, 128, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .dev-card:hover {
+            transform: translateY(-5px);
+            background: white;
+        }
+
+        .dev-name {
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .dev-info {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 1rem;
+            color: #4a5568;
+            line-height: 1.7;
+        }
+
+        .dev-info li b {
+            color: #1a202c;
+        }
+
+        .btn-restart {
+            margin-top: 3.5rem;
+            background: var(--accent-primary);
+            color: white;
+            padding: 20px 60px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.3rem;
+            display: inline-block;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 25px rgba(18, 53, 128, 0.2);
+        }
+
+        .btn-restart:hover {
+            transform: scale(1.05) translateY(-3px);
+            background: #0d2a66;
+            box-shadow: 0 15px 35px rgba(18, 53, 128, 0.3);
+        }
+
+        .footer-note {
+            font-size: 0.8rem;
+            color: #a0aec0;
+            margin-top: 3rem;
+        }
+
+        @media (max-width: 850px) {
+            .dev-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 2.5rem 1.5rem;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    
+        /* ส่วนแสดงผู้ใช้งาน */
+        .user-display {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+            z-index: 100;
+        }
+
+        .user-display .username {
+            color: var(--accent-primary);
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .user-display .username:hover {
+            color: #0d2a66;
+            transform: scale(1.05);
+        }
+
+        .user-display .logout-link {
+            color: #dc3545;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 5px 15px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+
+        .user-display .logout-link:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="user-display">
+        <a href="/user" class="username" style="text-decoration: none; color: inherit; cursor: pointer;">👤 {{ user }}</a>
+        <a href="/logout" class="logout-link" onclick="return confirm('ต้องการออกจากระบบ?')">🚪 ออกจากระบบ</a>
+    </div>
+
+    <div class="container">
+        <span class="status-icon">✔</span>
+        <h1>บันทึกสำเร็จ</h1>
+        <p class="main-subtitle">ขอบคุณสำหรับการใช้งานระบบ Smart Breath Analyzer</p>
+
+        <div class="statement-section">
+            <div class="statement-en">
+                The breath gas analysis has been successfully completed.
+                The results displayed represent a preliminary health risk assessment based on measured breath
+                parameters.
+                This system is intended for screening and research purposes only and does not provide medical diagnosis.
+            </div>
+
+            <div class="statement-th">
+                การวิเคราะห์ก๊าซในลมหายใจเสร็จสมบูรณ์แล้ว
+                ผลลัพธ์ที่แสดงเป็นการประเมินความเสี่ยงด้านสุขภาพเบื้องต้นโดยอ้างอิงจากพารามิเตอร์ของลมหายใจที่วัดได้
+                ระบบนี้มีวัตถุประสงค์เพื่อใช้ในการคัดกรองและการวิจัยเท่านั้น และไม่ถือเป็นการวินิจฉัยทางการแพทย์
+            </div>
+        </div>
+
+        <div class="developer-section">
+            <span class="dev-title">Developed by / คณะผู้พัฒนา</span>
+
+            <div class="dev-grid">
+                <div class="dev-card">
+                    <span class="dev-name">Mr. Podchara Pribwai</span>
+                    <ul class="dev-info">
+                        <li><b>ชั้น:</b> ม.3/1</li>
+                        <li><b>เลขที่:</b> 5</li>
+                        <li><b>Email:</b> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f888979c9b90998a99d6888a91b8889b9b8894d6999bd68c90">[email&#160;protected]</a></li>
+                        <li><b>Tel:</b> 089-854-8927</li>
+                    </ul>
+                </div>
+
+                <div class="dev-card">
+                    <span class="dev-name">Ms. Wannida Chantarakun</span>
+                    <ul class="dev-info">
+                        <li><b>ชั้น:</b> ม.3/1</li>
+                        <li><b>เลขที่:</b> 20</li>
+                        <li><b>Email:</b> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="46312728282f222768252e2706362525362a68272568322e">[email&#160;protected]</a></li>
+                        <li><b>Tel:</b> 096-662-2027</li>
+                    </ul>
+                </div>
+
+                <div class="dev-card">
+                    <span class="dev-name">Ms. Sicha Luechoowong</span>
+                    <ul class="dev-info">
+                        <li><b>ชั้น:</b> ม.3/1</li>
+                        <li><b>เลขที่:</b> 22</li>
+                        <li><b>Email:</b> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7d0e141e151c531108183d0d1e1e0d11531c1e530915">[email&#160;protected]</a></li>
+                        <li><b>Tel:</b> 080-9627-449</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <a href="/intro" class="btn-restart">เริ่มใหม่ (Back to Intro)</a>
+        <div class="footer-note">
+            © 2026 Smart Breath Analyzer Project | วิชาคอมพิวเตอร์ 6 ว23202
+        </div>
+    </div>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+        function createSnow() {
+            const container = document.createElement('div');
+            container.className = 'snow-container';
+            document.body.prepend(container);
+            const snowflakeCount = 60;
+            const symbols = ['❄', '•', '❅', '❆'];
+            for (let i = 0; i < snowflakeCount; i++) {
+                const snow = document.createElement('div');
+                snow.className = 'snowflake';
+                snow.innerHTML = symbols[Math.floor(Math.random() * symbols.

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ข้อมูลผู้ใช้ - Smart Breath Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #123580;
+            --accent: #5e81ac;
+            --bg: #eef2f7;
+            --white: rgba(255, 255, 255, 0.95);
+        }
+
+        .snow-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: -1; overflow: hidden;
+        }
+
+        .snowflake {
+            position: absolute; top: -10px; color: #62F5FC;
+            user-select: none; animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(105vh) rotate(360deg); opacity: 0.2; }
+        }
+
+        body {
+            font-family: 'Mali', sans-serif;
+            background-color: var(--bg);
+            background-image: radial-gradient(at 0% 0%, rgba(143, 164, 207, 0.3) 0, transparent 50%);
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            min-height: 100vh; 
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--white);
+            backdrop-filter: blur(15px);
+            border-radius: 35px;
+            padding: 40px;
+            width: 100%; 
+            max-width: 900px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .user-header {
+            text-align: center;
+            padding-bottom: 30px;
+            border-bottom: 2px solid rgba(18, 53, 128, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .user-icon {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
+
+        .user-name {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .user-birth {
+            font-size: 1.2rem;
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .history-table thead {
+            background: var(--primary);
+            color: white;
+        }
+
+        .history-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .history-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 0.95rem;
+        }
+
+        .history-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .history-table tbody tr:hover {
+            background: rgba(18, 53, 128, 0.05);
+        }
+
+        .risk-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .risk-normal {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .risk-caution {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .risk-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .no-history {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 1.1rem;
+        }
+
+        .btn-back {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 30px auto 0;
+            padding: 15px;
+            background: var(--primary);
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(18, 53, 128, 0.2);
+        }
+
+        .btn-back:hover {
+            background: #0d2a66;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(18, 53, 128, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+            
+            .history-table {
+                font-size: 0.85rem;
+            }
+            
+            .history-table th,
+            .history-table td {
+                padding: 10px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="user-header">
+            <div class="user-icon">👤</div>
+            <div class="user-name">{{ user_info.firstname }} {{ user_info.lastname }}</div>
+            <div class="user-birth">📅 วันเกิด: {{ user_info.birthdate_thai }}</div>
+        </div>
+
+        <div class="section-title">📋 ประวัติการตรวจ</div>
+
+        {% if history|length > 0 %}
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>ครั้งที่</th>
+                    <th>วันที่</th>
+                    <th>เวลา</th>
+                    <th>อาการที่ตรวจพบ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in history %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ record.date }}</td>
+                    <td>{{ record.time }}</td>
+                    <td>
+                        <span class="risk-badge {{ record.risk_class }}">
+                            {{ record.assessment }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="no-history">
+            <p>📝 ยังไม่มีประวัติการตรวจ</p>
+            <p style="font-size: 0.9rem; margin-top: 10px;">เริ่มต้นการตรวจที่หน้า Dashboard</p>
+        </div>
+        {% endif %}
+
+        <a href="/intro" class="btn-back">🏠 กลับหน้าหลัก</a>
+    </div>
+
+    <script>
+        function createSnow() {
+            const container = document.createElement('div');
+            container.className = 'snow-container';
+            document.body.prepend(container);
+            for (let i = 0; i < 30; i++) {
+                const snow = document.createElement('div');
+                snow.className = 'snowflake';
+                snow.innerHTML = '❄';
+                snow.style.left = Math.random() * 100 + 'vw';
+                snow.style.animationDuration = (Math.random() * 5 + 5) + 's';
+                snow.style.opacity = Math.random();
+                container.appendChild(snow);
+            }
+        }
+        createSnow();
+    </script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุปผลการวิเคราะห์ - Analysis Summary</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #c9ceda;
+            --accent-primary: #123580;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #2d3436;
+        }
+
+        .snow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: #62F5FC;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-10vh); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(105vh); opacity: 0; }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Mali', sans-serif;
+            background: var(--bg-primary) linear-gradient(135deg, #dce1eb 0%, #c9ceda 100%);
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            text-align: center;
+            position: relative;
+            z-index: 5;
+        }
+
+        .layout-box {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            text-align: left;
+        }
+
+        h1 {
+            color: var(--accent-primary);
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .section-title {
+            color: var(--accent-primary);
+            margin-bottom: 1rem;
+            display: block;
+            text-align: center;
+        }
+
+        .title-th { font-size: 1rem; font-weight: 700; display: block; }
+        .title-en { font-size: 0.7rem; font-weight: 400; opacity: 0.7; text-transform: uppercase; display: block; }
+
+        .result-status {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #10B981;
+            text-align: center;
+            display: block;
+        }
+
+        .sub-status-en {
+            font-size: 0.9rem;
+            color: #10B981;
+            opacity: 0.8;
+            display: block;
+            text-align: center;
+            font-weight: 400;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            text-align: center;
+        }
+
+        .btn small { display: block; font-size: 0.65rem; font-weight: 400; }
+
+        .btn-back { background: #94A3B8; color: white; }
+        .btn-finish { background: var(--accent-primary); color: white; }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .chart-grid-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .desc-th { font-weight: 700; color: var(--accent-primary); }
+        .desc-en { font-size: 0.85rem; color: #636e72; display: block; margin-top: 5px; line-height: 1.4; }
+
+        @media (max-width: 768px) {
+            .chart-grid-summary { grid-template-columns: 1fr; }
+        }
+    
+        /* ส่วนแสดงผู้ใช้งาน */
+        .user-display {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+            z-index: 100;
+        }
+
+        .user-display .username {
+            color: var(--accent-primary);
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .user-display .username:hover {
+            color: #0d2a66;
+            transform: scale(1.05);
+        }
+
+        .user-display .logout-link {
+            color: #dc3545;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 5px 15px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+
+        .user-display .logout-link:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="user-display">
+        <a href="/user" class="username" style="text-decoration: none; color: inherit; cursor: pointer;">👤 {{ user }}</a>
+        <a href="/logout" class="logout-link" onclick="return confirm('ต้องการออกจากระบบ?')">🚪 ออกจากระบบ</a>
+    </div>
+
+    <div class="container">
+        <h1>ผลการวิเคราะห์ <br> <span style="font-size: 1.2rem; font-weight: 400; opacity: 0.8;">Analysis Results</span></h1>
+
+        <div class="layout-box">
+            <span class="result-status">ประมวลผลเสร็จสิ้น</span>
+            <span class="sub-status-en">Processing Completed</span>
+        </div>
+
+        <div class="layout-box">
+            <div class="section-title">
+                <span class="title-th">ภาพรวมแนวโน้มก๊าซในลมหายใจ</span>
+                <span class="title-en">Breath Trend Overview (Summary)</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="gasChartSummary"></canvas>
+            </div>
+
+            <div class="chart-grid-summary">
+                <div>
+                    <div class="section-title">
+                        <span class="title-th" style="font-size: 0.8rem;">อุณหภูมิสภาพแวดล้อม (°C)</span>
+                        <span class="title-en" style="font-size: 0.6rem;">Ambient Temperature</span>
+                    </div>
+                    <div class="chart-container" style="height: 200px;">
+                        <canvas id="tempTrendChartSummary"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-title">
+                        <span class="title-th" style="font-size: 0.8rem;">ความชื้นสัมพัทธ์ (%)</span>
+                        <span class="title-en" style="font-size: 0.6rem;">Relative Humidity</span>
+                    </div>
+                    <div class="chart-container" style="height: 200px;">
+                        <canvas id="humidTrendChartSummary"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layout-box" style="margin-top: 20px; padding: 20px; border-left: 5px solid var(--accent-primary);">
+            <h3>🩺 ผลการวิเคราะห์ความเสี่ยงเบื้องต้น <br> <span style="font-size: 0.8rem; font-weight: 400;">Preliminary Risk Analysis</span></h3>
+            <div id="risk-analysis-display" style="font-size: 1.1em; line-height: 1.6;">
+                กำลังประมวลผลข้อมูล... (Processing data...)
+            </div>
+        </div>
+
+        <div class="layout-box">
+            <span class="desc-th">คำอธิบาย:</span>
+            <h3 style="font-size: 0.95rem;">ข้อมูลนี้ถูกบันทึกเมื่อ (Recorded on): <span id="time-display">-</span></h3>
+            <p style="margin-bottom: 0;">การประเมินนี้สร้างขึ้นจากการวิเคราะห์พารามิเตอร์ก๊าซในลมหายใจและปัจจัยด้านสภาพแวดล้อมที่วัดได้ ผลลัพธ์นี้แสดงถึงระดับความเสี่ยงด้านสุขภาพเบื้องต้นที่วิเคราะห์จากรูปแบบลมหายใจที่ตรวจพบเท่านั้น</p>
+            <span class="desc-en">This assessment is generated based on the analysis of measured breath gas parameters and environmental factors. The result represents a preliminary health risk level derived from observed breath patterns.</span>
+        </div>
+
+        <div class="btn-group">
+            <a href="/dashboard" class="btn btn-back">ย้อนกลับ<small>Back</small></a>
+            <a href="/end" class="btn btn-finish">ยืนยันและจบการทำงาน<small>Confirm and Finish</small></a>
+        </div>
+    </div>
+
+    <script>
+        Chart.defaults.font.family = 'Mali';
+
+        function getOptions(yLabelTh, yLabelEn) {
+            return {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: true, position: 'bottom' } },
+                scales: {
+                    x: { title: { display: true, text: 'เวลา (Time)' } },
+                    y: { title: { display: true, text: `${yLabelTh} (${yLabelEn})` } }
+                }
+            };
+        }
+
+        function analyzeHealthRisk(sensors) {
+            let risks = [];
+            let risksEn = [];
+
+            if (sensors.mq3_ppm > 50) {
+                risks.push("<span style='color: #e74c3c;'>พบปริมาณแอลกอฮอล์ในลมหายใจ</span>");
+                risksEn.push("<span style='color: #e74c3c; font-size: 0.85em;'>Alcohol detected in breath</span>");
+            }
+
+            if (sensors.mq135_ppm > 100 && sensors.mq2_ppm > 50) {
+                risks.push("<span style='color: #f39c12;'>เสี่ยงสภาวะเลือดเป็นกรด หรือเบาหวาน (Ketosis)</span>");
+                risksEn.push("<span style='color: #f39c12; font-size: 0.85em;'>Risk of Ketosis/Diabetes related markers</span>");
+            }
+
+            if (sensors.mq135_ppm > 150) {
+                risks.push("<span style='color: #f39c12;'>พบสารกลุ่มแอมโมเนียสูง (อาจเกี่ยวข้องกับระบบไต)</span>");
+                risksEn.push("<span style='color: #f39c12; font-size: 0.85em;'>High ammonia levels detected (Potential kidney relation)</span>");
+            }
+
+            if (sensors.mq8_ppm > 50) {
+                risks.push("<span style='color: #3498db;'>เสี่ยงภาวะการย่อยน้ำตาลบกพร่อง (Lactose Intolerance)</span>");
+                risksEn.push("<span style='color: #3498db; font-size: 0.85em;'>Risk of Lactose Intolerance markers</span>");
+            }
+
+            if (risks.length === 0) {
+                return "ไม่พบความเสี่ยงผิดปกติในเบื้องต้น<br><small style='opacity:0.7'>No preliminary health risks detected.</small>";
+            } else {
+                let html = "<b>ข้อตรวจพบ (Findings):</b><br>";
+                for(let i=0; i<risks.length; i++) {
+                    html += `• ${risks[i]}<br><span style='margin-left: 15px;'>${risksEn[i]}</span><br>`;
+                }
+                return html;
+            }
+        }
+
+        function initCharts() {
+            const rawData = localStorage.getItem('lastBreathTest'); 
+            if (!rawData) {
+                document.getElementById('risk-analysis-display').innerHTML = "ไม่พบข้อมูลการทดสอบ (No test data found)";
+                return;
+            }
+
+            const savedData = JSON.parse(rawData);
+
+            if (savedData.breath && savedData.breath.datasets) {
+                const datasets = savedData.breath.datasets;
+                const getLastVal = (idx) => {
+                    const arr = datasets[idx].data;
+                    return arr[arr.length - 1] || 0;
+                };
+
+                const currentSensors = {
+                    mq2_ppm: getLastVal(0), mq3_ppm: getLastVal(1),
+                    mq7_ppm: getLastVal(2), mq8_ppm: getLastVal(3), mq135_ppm: getLastVal(4)
+                };
+
+                document.getElementById('risk-analysis-display').innerHTML = analyzeHealthRisk(currentSensors);
+            }
+
+            document.getElementById('time-display').innerText = new Date(savedData.timestamp).toLocaleString();
+
+            if (savedData.breath) {
+                new Chart(document.getElementById('gasChartSummary').getContext('2d'), {
+                    type: 'line', data: savedData.breath, options: getOptions('ความเข้มข้น', 'PPM')
+                });
+            }
+            if (savedData.temp) {
+                new Chart(document.getElementById('tempTrendChartSummary').getContext('2d'), {
+                    type: 'line', data: savedData.temp, options: getOptions('องศา', '°C')
+                });
+            }
+            if (savedData.humid) {
+                new Chart(document.getElementById('humidTrendChartSummary').getContext('2d'), {
+                    type: 'line', data: savedData.humid, options: getOptions('ความชื้น', '%')
+                });
+            }
+        }
+
+        // บันทึกผลการประเมินความเสี่ยงไปยัง server
+        async function saveAssessmentToHistory() {
+            const riskText = document.getElementById('risk-analysis-display').innerText;
+            
+            try {
+                const response = await fetch('/api/save_assessment', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({assessment: riskText})
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    console.log('Assessment saved to history');
+                }
+            } catch (error) {
+                console.error('Error saving assessment:', error);
+            }
+        }
+
+        // เรียกบันทึกผลทันทีที่โหลดหน้า page2
+        window.addEventListener('load', function() {
+            // รอให้ข้อมูลโหลดเสร็จก่อน
+            setTimeout(saveAssessmentToHistory, 1000);
+        });
+
+        function createSnow() {
+            const container = document.body;
+            for (let i = 0; i < 30; i++) {
+                const snow = document.createElement('div');
+                snow.className = 'snowflake';
+                snow.innerHTML = '❄';
+                snow.style.left = Math.random() * 100 + 'vw';
+                snow.style.animationDuration = Math.random() * 5 + 5 + 's';
+                container.appendChild(snow);
+            }
+        }
+
+        window.onload = () => { initCharts(); createSnow(); };
+    </script>
+</body>
+
+</html>

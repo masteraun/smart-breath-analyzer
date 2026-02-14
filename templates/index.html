@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Breath Analyzer - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #c9ceda;
+            --accent-primary: #123580;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #2d3436;
+            --gradient-speedometer: linear-gradient(to right, #f23030 0%, #f28705 25%, #f2cb05 50%, #8ec63f 75%, #26a65b 100%);
+            --color-mq2: #f23030;
+            --color-mq3: #f28705;
+            --color-mq7: #f2cb05;
+            --color-mq8: #8ec63f;
+            --color-mq135: #123580;
+            --color-dht: #00cec9;
+            --color-temp: #ff7675;
+        }
+
+        .snow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: #62F5FC;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-10vh);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(105vh);
+                opacity: 0;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Mali', sans-serif;
+            background: var(--bg-primary) linear-gradient(135deg, #dce1eb 0%, #c9ceda 100%);
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            width: 100%;
+            max-width: 1100px;
+            text-align: center;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 5;
+        }
+
+        
+        /* ส่วนแสดงผู้ใช้งาน */
+        .user-display {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+            z-index: 100;
+        }
+
+        .user-display .username {
+            color: var(--accent-primary);
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .user-display .username:hover {
+            color: #0d2a66;
+            transform: scale(1.05);
+        }
+
+        .user-display .logout-link {
+            color: #dc3545;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 5px 15px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+
+        .user-display .logout-link:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+        }
+
+        h1 {
+            color: var(--accent-primary);
+            font-size: 2.2rem;
+            margin: 0 0 1.5rem 0;
+            font-weight: 700;
+        }
+
+        .section {
+            background: var(--card-bg);
+            padding: 1.2rem;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            font-size: 0.8rem;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            text-align: left;
+        }
+
+        .stats-row,
+        .mq-grid,
+        .chart-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .stats-row,
+        .mq-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .chart-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .item-card {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 15px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-mq2 {
+            border-left: 5px solid var(--color-mq2);
+        }
+
+        .card-mq3 {
+            border-left: 5px solid var(--color-mq3);
+        }
+
+        .card-mq7 {
+            border-left: 5px solid var(--color-mq7);
+        }
+
+        .card-mq8 {
+            border-left: 5px solid var(--color-mq8);
+        }
+
+        .card-mq135 {
+            border-left: 5px solid var(--color-mq135);
+        }
+
+        .card-dht {
+            border-left: 5px solid var(--color-dht);
+            background: #f0fffb;
+        }
+
+        .text-slot {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(18, 53, 128, 0.05);
+            padding: 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            color: var(--accent-primary);
+            border: 2px dashed var(--accent-primary);
+            cursor: default;
+        }
+
+        .text-slot strong {
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .label {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 3px;
+        }
+
+        .val {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .p-bg {
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .p-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            background: var(--gradient-speedometer);
+            background-size: 1000px 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 40px;
+            border-radius: 30px;
+            width: 100%;
+            max-width: 1200px;
+            position: relative;
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .sensor-detail-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 30px;
+            text-align: left;
+        }
+
+        .detail-left {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .detail-right-top {
+            background: #123580;
+            color: white;
+            padding: 35px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .detail-right-bottom {
+            background: #f0f4ff;
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid #d1d9e6;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        .val-large {
+            font-size: 5rem !important;
+            font-weight: 800;
+            line-height: 1;
+            margin: 10px 0;
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 25px;
+            top: 20px;
+            font-size: 40px;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: 0.2s;
+        }
+
+        .timer-box {
+            background: white;
+            padding: 25px;
+            border-radius: 25px;
+            margin-top: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn {
+            padding: 14px 40px;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: 0.3s;
+            margin: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-start {
+            background: #10b981;
+            color: white;
+            font-size: 1rem;
+            /* เพิ่มขนาดตัวอักษร (เดิมไม่มี) */
+            padding: 10px 30px;
+        }
+
+        .btn-next {
+            background: var(--accent-primary);
+            color: white;
+            display: none;
+        }
+
+        .btn-restart {
+            background: #64748b;
+            color: white;
+            display: none;
+        }
+
+        .btn-skip {
+            background: #94A3B8;
+            color: white;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .btn-speed {
+            background: #a855f7;
+            color: white;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .pass-input {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            font-size: 1.5rem;
+            text-align: center;
+            letter-spacing: 5px;
+            outline: none;
+        }
+
+        @media (max-width: 992px) {
+            .sensor-detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            .mq-grid,
+            .stats-row,
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="user-display">
+        <a href="/user" class="username" style="text-decoration: none; color: inherit; cursor: pointer;">👤 {{ user }}</a>
+        <a href="/logout" class="logout-link" onclick="return confirm('ต้องการออกจากระบบ?')">🚪 ออกจากระบบ</a>
+    </div>
+
+    <div class="container">
+        <div class="top-nav">
+            <a href="#" style="color: #64748b; text-decoration: none;">Change Password</a>
+            <a href="intro.html" style="color: #3b82f6; text-decoration: none;">Logout</a>
+        </div>
+        <h1>Smart Breath Analyzer</h1>
+
+        <div class="section">
+            <h2>Server Status</h2>
+            <div class="stats-row">
+                <div class="item-card" style="cursor:default">
+                    <div class="label">SERVER TEMPERATURE</div>
+                    <div class="val"><span id="server-temp">0</span>°C</div>
+                </div>
+                <div class="item-card" style="cursor:default">
+                    <div class="label">CPU USAGE</div>
+                    <div class="val"><span id="cpu">0</span>%</div>
+                    <div class="p-bg">
+                        <div id="cpu-bar" class="p-fill"></div>
+                    </div>
+                </div>
+                <div class="item-card" style="cursor:default">
+                    <div class="label">RAM USAGE</div>
+                    <div class="val"><span id="ram">0</span>%</div>
+                    <div class="p-bg">
+                        <div id="ram-bar" class="p-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Environment Data (DHT22)</h2>
+            <div class="stats-row">
+                <div class="item-card card-dht" onclick="openModal('dht_temp')">
+                    <div class="label" style="color: var(--color-temp)">AMBIENT TEMPERATURE</div>
+                    <div class="val"><span id="env-temp">0</span>°C</div>
+                </div>
+                <div class="item-card card-dht" onclick="openModal('dht_humid')">
+                    <div class="label" style="color: var(--color-dht)">RELATIVE HUMIDITY</div>
+                    <div class="val"><span id="env-humid">0</span>%</div>
+                    <div class="p-bg">
+                        <div id="humid-bar" class="p-fill" style="background: var(--color-dht); width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="text-slot"
+                    style="background: rgba(0, 206, 201, 0.05); border-color: var(--color-dht); color: var(--color-dht);">
+                    <div><strong>Environment Check</strong>สภาวะแวดล้อมขณะทำการทดสอบ</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Gas Sensor Monitoring (PPM)</h2>
+            <div class="mq-grid">
+                <div class="text-slot">
+                    <div><strong>Live Analysis</strong>วัดคุณภาพลมหายใจแบบเรียลไทม์</div>
+                </div>
+                <div class="item-card card-mq2" onclick="openModal('mq2')">
+                    <div class="label" style="color: var(--color-mq2)">MQ2 (Smoke/LPG)</div>
+                    <div class="val" id="mq2-ppm">0</div>
+                    <div class="p-bg">
+                        <div id="mq2-bar" class="p-fill"></div>
+                    </div>
+                </div>
+                <div class="item-card card-mq3" onclick="openModal('mq3')">
+                    <div class="label" style="color: var(--color-mq3)">MQ3 (Alcohol)</div>
+                    <div class="val" id="mq3-ppm">0</div>
+                    <div class="p-bg">
+                        <div id="mq3-bar" class="p-fill"></div>
+                    </div>
+                </div>
+                <div class="item-card card-mq7" onclick="openModal('mq7')">
+                    <div class="label" style="color: var(--color-mq7)">MQ7 (CO)</div>
+                    <div class="val" id="mq7-ppm">0</div>
+                    <div class="p-bg">
+                        <div id="mq7-bar" class="p-fill"></div>
+                    </div>
+                </div>
+                <div class="item-card card-mq8" onclick="openModal('mq8')">
+                    <div class="label" style="color: var(--color-mq8)">MQ8 (H2)</div>
+                    <div class="val" id="mq8-ppm">0</div>
+                    <div class="p-bg">
+                        <div id="mq8-bar" class="p-fill"></div>
+                    </div>
+                </div>
+                <div class="item-card card-mq135" onclick="openModal('mq135')">
+                    <div class="label" style="color: var(--color-mq135)">MQ135 (Air Quality)</div>
+                    <div class="val" id="mq135-ppm">0</div>
+                    <div class="p-bg">
+                        <div id="mq135-bar" class="p-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Breath Trend Overview</h2>
+            <div style="height: 350px;"><canvas id="gasChart"></canvas></div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="section">
+                <h2>Temp Trend</h2>
+                <div style="height: 200px;"><canvas id="tempTrendChart"></canvas></div>
+            </div>
+            <div class="section">
+                <h2>Humid Trend</h2>
+                <div style="height: 200px;"><canvas id="humidTrendChart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="timer-box">
+            <button id="start-btn" class="btn btn-start" onclick="startCollection()">เริ่มเก็บข้อมูลวิเคราะห์ (2
+                นาที)</button>
+            <button id="skip-btn" class="btn btn-skip" onclick="triggerPassword('skip')">Skip Timer</button>
+            <div id="main-progress-container"
+                style="height: 24px; background: #f1f1f1; border-radius: 50px; margin: 15px 0 10px 0; overflow: hidden; display: none;">
+                <div id="main-progress-bar"
+                    style="height: 100%; width: 0%; background: var(--gradient-speedometer); background-size: 1000px 24px; transition: width 1s linear;">
+                </div>
+            </div>
+            <div id="time-left" style="display: none; margin-top: 10px; font-weight: bold;">เวลาที่เหลือ: <span
+                    id="timer" style="color: var(--accent-primary);">02:00</span></div>
+
+            <div id="after-controls">
+                <button id="next-btn" class="btn btn-next"
+                    onclick="saveDataAndRedirect()">ดูรายงานผลการวิเคราะห์</button>
+                <button id="restart-btn" class="btn btn-restart" onclick="restartTest()">เริ่มการทดสอบใหม่
+                    (Restart)</button>
+            </div>
+
+            <hr style="margin: 20px 0; opacity: 0.1;">
+            <button id="unlock-test-btn" class="btn" style="background: #6366f1; color: white; font-size: 1rem;"
+                onclick="triggerPassword('unlock')">Unlock Test Mode</button>
+            <button id="speed-btn" class="btn btn-speed" onclick="toggleSpeed()">Speed x2 (OFF)</button>
+            <button id="start-rand-btn" class="btn"
+                style="background: #f59e0b; color: white; display: none; font-size: 1rem;"
+                onclick="toggleRandom(true)">Start Random Data</button>
+            <button id="stop-rand-btn" class="btn"
+                style="background: #ef4444; color: white; display: none; font-size: 1rem;"
+                onclick="toggleRandom(false)">Stop Random</button>
+        </div>
+    </div>
+
+    <div id="sensorModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Sensor Detail</h2>
+            <div class="sensor-detail-grid">
+                <div class="detail-left">
+                    <div style="height: 400px;"><canvas id="modalChart"></canvas></div>
+                </div>
+                <div>
+                    <div class="detail-right-top" id="modalColorHeader">
+                        <div class="val-large" id="modalRawVal">0</div>
+                        <div id="modalUnit">PPM</div>
+                    </div>
+                    <div class="detail-right-bottom">
+                        <strong>Health Info:</strong>
+                        <p id="modalDesc"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="passwordModal" class="modal" style="z-index: 200;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2>Security Check</h2>
+            <input type="password" id="passInput" class="pass-input" placeholder="••••">
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn btn-start" onclick="checkPassword()">Confirm</button>
+                <button class="btn" style="background: #e2e8f0;" onclick="closePassModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let collectionInterval, randomInterval, startTime, activeSensor = null, modalChart = null, currentPassAction = null;
+        let isCollecting = false, isRandomizing = false, isSpeedUp = false, collectionSpeed = 1000;
+
+        const sensorDataHistory = {
+            mq2: Array(20).fill(0), mq3: Array(20).fill(0), mq7: Array(20).fill(0),
+            mq8: Array(20).fill(0), mq135: Array(20).fill(0),
+            dht_temp: Array(20).fill(0), dht_humid: Array(20).fill(0)
+        };
+
+        const sensorInfo = {
+            mq2: { title: "MQ2", desc: "ตรวจวัดก๊าซกลุ่ม Smoke และ LPG สะท้อนถึงการสะสมของสารพิษที่ส่งผลเสียต่อระบบทางเดินหายใจโดยตรง โดยควัน (Smoke) ที่ตกค้างมักมาจากการสูบบุหรี่หรือมลพิษ ซึ่งจะเข้าไปทำลายถุงลมปอดและกระตุ้นการอักเสบเรื้อรัง นำไปสู่โรคหลอดลมอักเสบหรือมะเร็งปอดได้ ในขณะที่ก๊าซ LPG หากสูดดมเข้าไปจะขัดขวางการลำเลียงออกซิเจนในกระแสเลือด ทำให้เกิดอาการวิงเวียนศีรษะ คลื่นไส้ และหากสะสมในปริมาณมากอาจส่งผลกระทบต่อระบบประสาทส่วนกลางและทำให้หมดสติได้ การวัดค่าเหล่านี้จึงเป็นดัชนีสำคัญที่บ่งบอกว่าร่างกายกำลังเผชิญกับสภาวะที่เสี่ยงต่อความเสื่อมของปอดและภาวะขาดออกซิเจนในระดับเซลล์", unit: "PPM", color: "#f23030" },
+            mq3: { title: "MQ3", desc: "ตรวจวัด Ethanol/Alcohol ในลมหายใจ เป็นตัวบ่งชี้โดยตรงถึงระดับแอลกอฮอล์ในกระแสเลือดที่แพร่ผ่านถุงลมปอดออกมา ซึ่งส่งผลกระทบต่อสุขภาพในระยะสั้นโดยทำให้การทำงานของระบบประสาทช้าลง สูญเสียการทรงตัว และการตัดสินใจบกพร่อง หากมีการสะสมในปริมาณสูงต่อเนื่องจะกลายเป็นภาระหนักของตับในการขับสารพิษ นำไปสู่ภาวะตับอักเสบ ตับแข็ง และเพิ่มความเสี่ยงต่อโรคหัวใจรวมถึงเส้นเลือดในสมองแตก การวัดค่านี้จึงช่วยเตือนสติถึงภาวะมึนเมาที่อาจเป็นอันตรายต่อชีวิตและสะท้อนถึงความเสื่อมสภาพของระบบเผาผลาญภายในร่างกายที่ถูกทำลายด้วยสารเอทานอลอย่างเรื้อรัง", unit: "PPM", color: "#f28705" },
+            mq7: { title: "MQ7", desc: "ตรวจวัด Carbon Monoxide หากตรวจพบค่า CO สูงในลมหายใจ สะท้อนถึงการสูบบุหรี่หรือการสูดดมควันจากการเผาไหม้ที่ไม่สมบูรณ์ ซึ่งส่งผลให้หัวใจต้องทำงานหนักขึ้นเพื่อสูบฉีดเลือดไปเลี้ยงร่างกาย ส่งผลเสียต่อระบบหลอดเลือดและหัวใจในระยะยาว และหากได้รับในปริมาณมากทันทีจะทำให้เกิดอาการปวดศีรษะ อาเจียน หมดสติ และอาจรุนแรงถึงขั้นเสียชีวิตได้เนื่องจากสมองและหัวใจขาดออกซิเจนอย่างฉับพลัน", unit: "PPM", color: "#f2cb05" },
+            mq8: { title: "MQ8", desc: "ตรวจวัด Hydrogen (SIBO/Gut Health) หากตรวจพบค่าไฮโดรเจนสูงในลมหายใจ มักบ่งชี้ถึงระบบการย่อยและการดูดซึมอาหารที่บกพร่อง ส่งผลเสียต่อสุขภาพทำให้เกิดอาการท้องอืด ท้องเสียเรื้อรัง และร่างกายขาดสารอาหารเนื่องจากแบคทีเรียแย่งดูดซึมไปก่อน ในระยะยาวภาวะนี้จะทำให้ผนังลำไส้อักเสบและอ่อนแอลง ส่งผลต่อระบบภูมิคุ้มกันและความสมดุลของร่างกายโดยรวม การติดตามค่านี้จึงช่วยให้ทราบถึงสภาวะแวดล้อมภายในลำไส้และประสิทธิภาพของระบบเผาผลาญในระดับจุลชีพ", unit: "PPM", color: "#8ec63f" },
+            mq135: { title: "MQ135", desc: "ตรวจวัด Ammonia & Air Toxins หากได้รับต่อเนื่องจะกระตุ้นการอักเสบในถุงลมปอดและแทรกซึมเข้าสู่กระแสเลือด ก่อให้เกิดภาวะเครียดออกซิเดชัน (Oxidative Stress) ที่ทำให้เซลล์เสื่อมสภาพเร็วขึ้นและเพิ่มความเสี่ยงต่อโรคหัวใจและมะเร็ง การติดตามค่านี้จึงช่วยเตือนถึงสภาวะความเป็นพิษภายในร่างกายและการอยู่ในสภาพแวดล้อมที่ไม่ปลอดภัยต่อระบบทางเดินหายใจในระยะยาว", unit: "PPM", color: "#123580" },
+            dht_temp: { title: "Temperature", desc: "อุณหภูมิสภาวะแวดล้อม หากอุณหภูมิสูงเกินไปจะทำให้หัวใจทำงานหนักเพื่อระบายความร้อนและส่งผลต่อความดันโลหิต ในขณะที่อุณหภูมิต่ำเกินไปอาจทำให้ระบบทางเดินหายใจระคายเคือง", unit: "°C", color: "#ff7675" },
+            dht_humid: { title: "Humidity", desc: "ความชื้นสัมพัทธ์ ความชื้นที่สูงเกินไปอาจทำให้เซนเซอร์อ่านค่าผิดเพี้ยนและทำให้หายใจอึดอัด ในขณะที่ความชื้นต่ำเกินไปจะทำให้เยื่อบุทางเดินหายใจแห้งและระคายเคือง", unit: "%", color: "#00cec9" }
+        };
+
+        Chart.defaults.font.family = 'Mali';
+        const chartOptions = { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: true } }, scales: { x: { display: true }, y: { beginAtZero: true } } };
+
+        const gasChart = new Chart(document.getElementById('gasChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'MQ2', borderColor: '#f23030', data: [] }, { label: 'MQ3', borderColor: '#f28705', data: [] }, { label: 'MQ7', borderColor: '#f2cb05', data: [] }, { label: 'MQ8', borderColor: '#8ec63f', data: [] }, { label: 'MQ135', borderColor: '#123580', data: [] }] }, options: chartOptions });
+        const tempTrendChart = new Chart(document.getElementById('tempTrendChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Temp', borderColor: '#ff7675', data: [], fill: true }] }, options: chartOptions });
+        const humidTrendChart = new Chart(document.getElementById('humidTrendChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Humid', borderColor: '#00cec9', data: [], fill: true }] }, options: chartOptions });
+
+        function triggerPassword(action) { currentPassAction = action; document.getElementById('passInput').value = ''; document.getElementById('passwordModal').style.display = 'flex'; document.getElementById('passInput').focus(); }
+        function closePassModal() { document.getElementById('passwordModal').style.display = 'none'; }
+        function checkPassword() { if (["52022", "poppoppop"].includes(document.getElementById('passInput').value)) { if (currentPassAction === 'skip') finishCollection(); else if (currentPassAction === 'unlock') { document.getElementById('unlock-test-btn').style.display = 'none'; document.getElementById('start-rand-btn').style.display = 'inline-block'; document.getElementById('speed-btn').style.display = 'inline-block'; } closePassModal(); } else alert("Access Denied!"); }
+
+        function toggleSpeed() {
+            isSpeedUp = !isSpeedUp;
+            collectionSpeed = isSpeedUp ? 500 : 1000;
+            document.getElementById('speed-btn').innerText = `Speed x2 (${isSpeedUp ? 'ON' : 'OFF'})`;
+            if (isCollecting) { clearInterval(collectionInterval); runTimer(); }
+        }
+
+        function updateDashboard(data) {
+            document.getElementById('server-temp').innerText = data.server_temperature;
+            document.getElementById('cpu-bar').style.width = data.cpu + '%';
+            document.getElementById('cpu').innerText = data.cpu;
+            document.getElementById('ram-bar').style.width = data.memory + '%';
+            document.getElementById('ram').innerText = data.memory;
+            document.getElementById('env-temp').innerText = data.dht_temperature;
+            document.getElementById('env-humid').innerText = data.humidity;
+            document.getElementById('humid-bar').style.width = data.humidity + '%';
+
+            const s = data.sensors;
+            const updateUI = (id, val) => {
+                document.getElementById(id + '-ppm').innerText = val;
+                document.getElementById(id + '-bar').style.width = Math.min((val / 10), 100) + '%';
+                sensorDataHistory[id].push(val); sensorDataHistory[id].shift();
+                if (activeSensor === id) { document.getElementById('modalRawVal').innerText = val; updateModalChart(val); }
+            };
+
+            sensorDataHistory.dht_temp.push(data.dht_temperature); sensorDataHistory.dht_temp.shift();
+            sensorDataHistory.dht_humid.push(data.humidity); sensorDataHistory.dht_humid.shift();
+
+            updateUI('mq2', s.mq2_ppm); updateUI('mq3', s.mq3_ppm); updateUI('mq7', s.mq7_ppm); updateUI('mq8', s.mq8_ppm); updateUI('mq135', s.mq135_ppm);
+
+            if (isCollecting) {
+                const label = Math.floor((Date.now() - startTime) / 1000) + "s";
+                gasChart.data.labels.push(label);[s.mq2_ppm, s.mq3_ppm, s.mq7_ppm, s.mq8_ppm, s.mq135_ppm].forEach((v, i) => gasChart.data.datasets[i].data.push(v));
+                tempTrendChart.data.labels.push(label); tempTrendChart.data.datasets[0].data.push(data.dht_temperature);
+                humidTrendChart.data.labels.push(label); humidTrendChart.data.datasets[0].data.push(data.humidity);
+
+                if (gasChart.data.labels.length > 20) { [gasChart, tempTrendChart, humidTrendChart].forEach(c => { c.data.labels.shift(); c.data.datasets.forEach(d => d.data.shift()); }); }
+                gasChart.update('none'); tempTrendChart.update('none'); humidTrendChart.update('none');
+            }
+        }
+
+        function startCollection() { restartTest(); isCollecting = true; startTime = Date.now(); document.getElementById('start-btn').style.display = 'none'; document.getElementById('main-progress-container').style.display = 'block'; document.getElementById('time-left').style.display = 'block'; document.getElementById('skip-btn').style.display = 'inline-block'; runTimer(); }
+        function runTimer() { let total = 120, current = Math.floor(parseFloat(document.getElementById('main-progress-bar').style.width || 0) * 1.2); collectionInterval = setInterval(() => { current++; let prog = (current / total) * 100; document.getElementById('main-progress-bar').style.width = prog + '%'; let m = Math.floor((total - current) / 60), s = (total - current) % 60; document.getElementById('timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; if (current >= total) finishCollection(); }, collectionSpeed); }
+        function finishCollection() { clearInterval(collectionInterval); isCollecting = false; document.getElementById('main-progress-bar').style.width = '100%'; document.getElementById('next-btn').style.display = 'inline-block'; document.getElementById('restart-btn').style.display = 'inline-block'; document.getElementById('time-left').innerHTML = "<span style='color:#10b981'>Complete</span>"; document.getElementById('skip-btn').style.display = 'none'; }
+
+        function restartTest() {
+            clearInterval(collectionInterval); isCollecting = false;
+            document.getElementById('start-btn').style.display = 'inline-block';
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('restart-btn').style.display = 'none';
+            document.getElementById('main-progress-container').style.display = 'none';
+            document.getElementById('main-progress-bar').style.width = '0%';
+            document.getElementById('time-left').style.display = 'none';
+            [gasChart, tempTrendChart, humidTrendChart].forEach(c => { c.data.labels = []; c.data.datasets.forEach(d => d.data = []); c.update(); });
+        }
+
+        function openModal(id) {
+            activeSensor = id; const info = sensorInfo[id];
+            document.getElementById('modalTitle').innerText = info.title;
+            document.getElementById('modalDesc').innerText = info.desc;
+            document.getElementById('modalUnit').innerText = info.unit;
+            document.getElementById('modalColorHeader').style.background = info.color;
+            document.getElementById('sensorModal').style.display = 'flex';
+            const mCtx = document.getElementById('modalChart').getContext('2d');
+            if (modalChart) modalChart.destroy();
+            modalChart = new Chart(mCtx, { type: 'line', data: { labels: Array(20).fill(''), datasets: [{ label: info.title, borderColor: info.color, data: [...sensorDataHistory[id]], fill: true, tension: 0.4 }] }, options: chartOptions });
+        }
+        function closeModal() { document.getElementById('sensorModal').style.display = 'none'; activeSensor = null; }
+        function updateModalChart(v) { if (modalChart) { modalChart.data.datasets[0].data.push(v); modalChart.data.datasets[0].data.shift(); modalChart.update('none'); } }
+
+        function generateRandomData() {
+            return {
+                server_temperature: (40 + Math.random() * 15).toFixed(1),
+                dht_temperature: (25 + Math.random() * 10).toFixed(1),
+                humidity: Math.floor(30 + Math.random() * 50),
+                cpu: Math.floor(10 + Math.random() * 80),
+                memory: Math.floor(20 + Math.random() * 60),
+                sensors: { mq2_ppm: Math.floor(100 + Math.random() * 300), mq3_ppm: Math.floor(50 + Math.random() * 200), mq7_ppm: Math.floor(10 + Math.random() * 100), mq8_ppm: Math.floor(5 + Math.random() * 50), mq135_ppm: Math.floor(80 + Math.random() * 200) }
+            };
+        }
+
+        function toggleRandom(en) {
+            isRandomizing = en;
+            document.getElementById('start-rand-btn').style.display = en ? 'none' : 'inline-block';
+            document.getElementById('stop-rand-btn').style.display = en ? 'inline-block' : 'none';
+            if (en) { randomInterval = setInterval(() => { updateDashboard(generateRandomData()); }, 2000); } else { clearInterval(randomInterval); }
+        }
+
+        function saveDataAndRedirect() {
+            const dataToSave = {
+                breath: gasChart.data,
+                temp: tempTrendChart.data,
+                humid: humidTrendChart.data,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('lastBreathTest', JSON.stringify(dataToSave));
+            window.location.href = "page2";
+        }
+
+        setInterval(async () => { if (!isRandomizing) { try { const res = await fetch('/api/status'); updateDashboard(await res.json()); } catch (e) { } } }, 2000);
+        // --- ส่วนการรับข้อมูลผ่าน MQTT ---
+        /*const MQTT_BROKER = 'wss://broker.hivemq.com:8884/mqtt';
+        const MQTT_TOPIC = "esp32/sensors/data";
+
+        const client = mqtt.connect(MQTT_BROKER);
+
+        client.on('connect', () => {
+            console.log("MQTT Connected!");
+            client.subscribe(MQTT_TOPIC);
+        });
+
+        client.on('message', (topic, message) => {
+            if (!isRandomizing) {
+                try {
+                    const data = JSON.parse(message.toString());
+
+                    // ปรับข้อมูลจากบอร์ด ให้เข้ากับฟังก์ชัน updateDashboard เดิมของคุณ
+                    const formattedData = {
+                        server_temperature: "Connected",
+                        cpu: Math.floor(Math.random() * 30),
+                        memory: Math.floor(Math.random() * 30),
+                        dht_temperature: data.temp || 0,
+                        humidity: data.humi || 0,
+                        sensors: {
+                            mq2_ppm: data.mq2 || 0,
+                            mq3_ppm: data.mq3 || 0,
+                            mq7_ppm: data.mq7 || 0,
+                            mq8_ppm: data.mq8 || 0,
+                            mq135_ppm: data.mq135 || 0
+                        }
+                    };
+
+                    updateDashboard(formattedData);
+
+                } catch (e) { console.error("MQTT Data Error:", e); }
+            }
+        });*/
+        window.onclick = (e) => { if (e.target.className === 'modal') { closeModal(); closePassModal(); } };
+
+        // Snow effect
+        for (let i = 0; i < 30; i++) { const s = document.createElement('div'); s.className = 'snowflake'; s.innerHTML = '❄'; s.style.left = Math.random() * 100 + 'vw'; s.style.animationDuration = Math.random() * 5 + 5 + 's'; document.body.appendChild(s); }
+    </script>
+</body>
+
+</html>

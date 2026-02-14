@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Breath Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #123580;
+            --accent: #5e81ac;
+            --bg: #eef2f7;
+            --white: rgba(255, 255, 255, 0.85);
+        }
+
+        /* ปุ่มข้อมูลผู้ใช้และ Logout */
+        .top-nav {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 100;
+            display: flex;
+            gap: 15px;
+        }
+
+        .user-info {
+            background: var(--white);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            color: var(--primary);
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .user-info:hover {
+            transform: translateY(-3px);
+            background: rgba(18, 53, 128, 0.1);
+            box-shadow: 0 15px 30px rgba(18, 53, 128, 0.2);
+        }
+
+        .logout-btn {
+            background: rgba(220, 53, 69, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            padding: 12px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-3px);
+            background: #dc3545;
+            color: white;
+            box-shadow: 0 15px 30px rgba(220, 53, 69, 0.3);
+        }
+
+        /* Snowflake Style */
+        .snow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: #62F5FC;
+            user-select: none;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(105vh) rotate(360deg); opacity: 0.2; }
+        }
+
+        body {
+            font-family: 'Mali', sans-serif;
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(143, 164, 207, 0.3) 0, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(18, 53, 128, 0.1) 0, transparent 50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--white);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            padding: 50px;
+            max-width: 850px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 1s ease-out;
+            position: relative;
+            z-index: 10;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-area {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            display: inline-block;
+            filter: drop-shadow(0 5px 10px rgba(18, 53, 128, 0.2));
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 3.2rem;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            letter-spacing: -1.5px;
+        }
+
+        .academic-tag {
+            background: rgba(18, 53, 128, 0.1);
+            color: var(--primary);
+            padding: 6px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: 30px;
+        }
+
+        .description-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            text-align: left;
+            margin: 30px 0;
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 25px 35px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .text-th {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: #34495e;
+            font-weight: 400;
+        }
+
+        .text-en {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #7f8c8d;
+            font-style: italic;
+            border-top: 2px solid rgba(18, 53, 128, 0.05);
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .cta-box {
+            margin-top: 40px;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            padding: 20px 60px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.3rem;
+            display: inline-block;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 30px rgba(18, 53, 128, 0.25);
+        }
+
+        .btn:hover {
+            transform: scale(1.03) translateY(-3px);
+            background: #0d2a66;
+            box-shadow: 0 20px 40px rgba(18, 53, 128, 0.35);
+        }
+
+        @media (max-width: 600px) {
+            .top-nav { 
+                top: 15px; 
+                right: 15px; 
+                flex-direction: column;
+                gap: 10px;
+            }
+            .card { padding: 30px 20px; }
+            h1 { font-size: 2.2rem; }
+            .btn { width: 80%; padding: 15px; }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="top-nav">
+        <a href="/user" class="user-info">
+            <span>👤 {{ user }}</span>
+        </a>
+        <a href="/logout" class="logout-btn" onclick="return confirm('ต้องการออกจากระบบ?')">
+            <span>🚪 ออกจากระบบ</span>
+        </a>
+    </nav>
+
+    <div class="card">
+        <div class="logo-area">🫁</div>
+
+        <header>
+            <h1>Smart Breath Analyzer</h1>
+            <div class="academic-tag">วิชาคอมพิวเตอร์ 6 ว23202</div>
+            <p>มุ่งเน้นการพัฒนาทักษะด้านเทคโนโลยีสารสนเทศและการประยุกต์ใช้งานในเชิงวิชาการ</p>
+        </header>
+
+        <div class="description-grid">
+            <div class="info-box">
+                <div class="text-th">
+                    Smart Breath Analyser
+                    ได้รับการพัฒนาขึ้นเพื่อใช้ในการตรวจวัดและวิเคราะห์องค์ประกอบของก๊าซหลายชนิดที่ตรวจพบในลมหายใจออกของมนุษย์
+                    โดยระบบสามารถให้การประเมินความเสี่ยงด้านสุขภาพในเบื้องต้น
+                    อันเป็นข้อมูลสนับสนุนสำหรับการวิเคราะห์ทางการแพทย์และการศึกษาวิจัยในขั้นต่อไป
+                </div>
+                <div class="text-en">
+                    Smart Breath Analyser is designed to measure and analyze multiple gas components present in exhaled
+                    breath.
+                    The system provides a preliminary health risk assessment to support further medical analysis and
+                    research.
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-box">
+            <p style="margin-bottom: 20px; font-weight: 500; color: #555;">เริ่มต้นการตรวจวัดคุณภาพลมหายใจ</p>
+            <a href="/index" class="btn">เข้าสู่ระบบเพื่อเริ่มใช้งาน</a>
+        </div>
+
+    </div>
+
+    <script>
+        function createSnow() {
+            const container = document.createElement('div');
+            container.className = 'snow-container';
+            document.body.prepend(container);
+
+            const snowflakeCount = 60;
+            const symbols = ['❄', '•', '◦', '○'];
+
+            for (let i = 0; i < snowflakeCount; i++) {
+                const snow = document.createElement('div');
+                snow.className = 'snowflake';
+                snow.innerHTML = symbols[Math.floor(Math.random() * symbols.length)];
+
+                const size = Math.random() * 15 + 10;
+                snow.style.left = Math.random() * 100 + 'vw';
+                snow.style.fontSize = size + 'px';
+                snow.style.animationDuration = (Math.random() * 5 + 5) + 's';
+                snow.style.animationDelay = (Math.random() * 5) + 's';
+                snow.style.opacity = Math.random() * 0.7 + 0.3;
+
+                container.appendChild(snow);
+            }
+        }
+        createSnow();
+    </script>
+</body>
+
+</html>
