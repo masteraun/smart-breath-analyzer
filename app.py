@@ -155,13 +155,13 @@ def intro():
         return redirect(url_for('login'))
     return render_template('intro.html')
 
-@app.route('/dashboard')
-def dashboard():
+@app.route('/index')
+def index():
     if 'username' not in session:
         return redirect(url_for('login'))
     return render_template('index.html', stats=get_system_stats(), user=session['username'])
 
-# --- API สำหรับการเชื่อมต่อกับ ESP32 และ Dashboard ---
+# --- API สำหรับการเชื่อมต่อกับ ESP32 และ index ---
 
 @app.route('/api/status', methods=['GET', 'POST'])
 def api_status():
